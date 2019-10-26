@@ -1,4 +1,4 @@
-package net.ricebean.railway.controller;
+package net.ricebean.railroad.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
