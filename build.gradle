@@ -2,10 +2,18 @@ plugins {
 	id 'org.springframework.boot' version '2.2.0.RELEASE'
 	id 'io.spring.dependency-management' version '1.0.8.RELEASE'
 	id 'java'
+	id 'com.gorylenko.gradle-git-properties' version '2.2.0'
+
+}
+
+def gitVersion = "git describe --tags".execute().text
+
+if (gitVersion == "") {
+	gitVersion = "DEVELOPMENT"
 }
 
 group = 'net.ricebean.railroad.controller'
-version = '0.0.1-SNAPSHOT'
+version = gitVersion
 sourceCompatibility = '11'
 
 repositories {
@@ -14,6 +22,7 @@ repositories {
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
 	}
