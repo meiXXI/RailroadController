@@ -2,6 +2,8 @@ package net.ricebean.railroad.controller.service;
 
 import net.ricebean.railroad.controller.model.DccCommand;
 
+import java.io.IOException;
+
 /**
  * This Service Interfaces abstracts the DCC communication logic.
  */
@@ -12,5 +14,5 @@ public interface DccService {
      * @param dccCommand The DCC Command.
      * @return String value
      */
-    String executeCommand(DccCommand dccCommand);
+    String executeCommand(DccCommand dccCommand) throws IOException;
 }

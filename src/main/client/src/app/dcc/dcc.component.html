@@ -1,4 +1,9 @@
 <h1>DCC Module</h1>
+<div>
+    <button type="submit" class="btn btn-outline-secondary" (click)="switchOn()">On</button>
+    <button type="submit" class="btn btn-outline-secondary" (click)="switchOff()">Off</button>
+</div>
+<br />
 <div class="form-group">
     <label for="dcc-command">Please enter your DCC Command:</label>
     <input type="text" [(ngModel)]="dccCommand.command" class="form-control" id="dcc-command">

@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+
 /**
  * REST endpoints for DCC commands.
  */
@@ -23,8 +25,22 @@ public class DccController {
     private DccService dccService;
 
     @PostMapping
-    public String executeCommand(@RequestBody DccCommand dccCommand) {
+    public String executeCommand(@RequestBody DccCommand dccCommand) throws Exception {
         log.info("New DCC Command has received: '" + dccCommand.getCommand() + "'");
+        return dccService.executeCommand(dccCommand);
+    }
+
+    @PostMapping(value = "/on")
+    public String switchOn() throws IOException {
+        DccCommand dccCommand = new DccCommand();
+        dccCommand.setCommand("<1>");
+        return dccService.executeCommand(dccCommand);
+    }
+
+    @PostMapping(value = "/off")
+    public String switchOff() throws IOException {
+        DccCommand dccCommand = new DccCommand();
+        dccCommand.setCommand("<0>");
         return dccService.executeCommand(dccCommand);
     }
 }
