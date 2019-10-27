@@ -1,0 +1,6 @@
+<h1>DCC Module</h1>
+<div class="form-group">
+    <label for="dcc-command">Please enter your DCC Command:</label>
+    <input type="text" [(ngModel)]="dccCommand.command" class="form-control" id="dcc-command">
+</div>
+<button type="submit" class="btn btn-outline-primary" (click)="executeCommand()">Send Command</button>
