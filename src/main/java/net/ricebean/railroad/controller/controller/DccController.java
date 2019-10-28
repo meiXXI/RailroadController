@@ -31,14 +31,14 @@ public class DccController {
     }
 
     @PostMapping(value = "/on")
-    public String switchOn() throws IOException {
+    public String switchOn() throws Exception {
         DccCommand dccCommand = new DccCommand();
         dccCommand.setCommand("<1>");
         return dccService.executeCommand(dccCommand);
     }
 
     @PostMapping(value = "/off")
-    public String switchOff() throws IOException {
+    public String switchOff() throws Exception {
         DccCommand dccCommand = new DccCommand();
         dccCommand.setCommand("<0>");
         return dccService.executeCommand(dccCommand);

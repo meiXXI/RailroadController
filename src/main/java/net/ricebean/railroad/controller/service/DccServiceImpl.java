@@ -1,6 +1,5 @@
 package net.ricebean.railroad.controller.service;
 
-import net.ricebean.railroad.controller.controller.SystemController;
 import net.ricebean.railroad.controller.model.DccCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,9 +20,7 @@ public class DccServiceImpl implements DccService {
         log.info("Process Command: " + dccCommand.getCommand());
 
         Path path = Paths.get("/dev/ttyACM0");
-
         Files.write(path, dccCommand.getCommand().getBytes());
-
 
         return null;
     }
