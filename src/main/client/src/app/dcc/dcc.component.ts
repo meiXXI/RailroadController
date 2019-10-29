@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { DccCommand } from './dcc-command'
 import { DccStatus } from './dcc-status';
+import { DccLogItem } from './dcc-log-item';
 
 @Component({
     selector: 'app-dcc',
@@ -14,6 +15,9 @@ export class DccComponent implements OnInit {
 
     dccStatus: DccStatus;
 
+    logItems: DccLogItem[] = null;
+    logTimestamp: number = 0;
+
     /**
      * Custom constructor.
      */
@@ -21,53 +25,103 @@ export class DccComponent implements OnInit {
         private http: HttpClient
     ) {
         this.dccCommand = new DccCommand()
-        this.statusUpdate();
-    }
 
-    ngOnInit() {
     }
 
     /**
-     * Execute the DCC Command
+     * Is called after class has been initialized.
      */
-    executeCommand() {
-        if (this.dccCommand.command != null && this.dccCommand.command != "") {
+    ngOnInit() {
 
-            // post
-            this.http.post('/dcc', this.dccCommand)
+        // reload logs
+        this.reloadLogs();
+
+        // reload status
+        this.reloadStatus();
+    }
+
+    sendCommand() {
+        this.executeCommand(this.dccCommand);
+    }
+
+    /**
+     * Execute a DCC Command
+     */
+    executeCommand(dccCommand: DccCommand) {
+
+        // post
+        this.http.post('/dcc', dccCommand)
+            .subscribe(
+                data => console.log("Success: " + data),
+                error => console.log("Error: " + error)
+            )
+    }
+
+    /**
+     * Switch on DCC Controller.
+     */
+    switchOn() {
+        let cmd: DccCommand = new DccCommand();
+        cmd.command = "<1>";
+
+        this.executeCommand(cmd);
+    }
+
+    /**
+     * Switch off DCC Controller.
+     */
+    switchOff() {
+        let cmd: DccCommand = new DccCommand();
+        cmd.command = "<0>";
+
+        this.executeCommand(cmd);
+    }
+
+    /**
+     * Automated logs update.
+     */
+    reloadLogs() {
+        setTimeout(() => {
+            this.http.get<DccLogItem[]>('/dcc/logs/' + this.logTimestamp)
                 .subscribe(
-                    data => console.log("Success: " + data),
+                    data => {
+
+                        // save logs
+                        if (this.logItems == null) {
+                            this.logItems = data;
+                        } else {
+                            this.logItems = data.concat(this.logItems);
+                        }
+
+                        // keep latest timestamp
+                        if (data.length > 0) {
+                            this.logTimestamp = data[0].timestamp;
+                        }
+
+                        // shorten messages list
+                        if (this.logItems.length > 6000) {
+                            this.logItems = this.logItems.slice(0, 6000);
+                        }
+                    },
                     error => console.log("Error: " + error)
                 )
-        }
+
+            this.reloadLogs();
+        }, 2500);
     }
 
-    switchOn() {
-        this.http.post('/dcc/on', this.dccCommand)
-            .subscribe(
-                data => console.log("Success: " + data),
-                error => console.log("Error: " + error)
-            )
-    }
-
-    switchOff() {
-        this.http.post('/dcc/off', this.dccCommand)
-            .subscribe(
-                data => console.log("Success: " + data),
-                error => console.log("Error: " + error)
-            )
-    }
-
-    statusUpdate() {
+    /**
+     * Automated status update.
+     */
+    reloadStatus() {
         setTimeout(() => {
-            // update status
             this.http.get<DccStatus>('/dcc/status')
                 .subscribe(
                     data => this.dccStatus = data,
                     error => console.log("Error: " + error)
                 )
 
-            this.statusUpdate();
-        }, 2500);
+            this.reloadStatus();
+        }, 2000);
     }
 }

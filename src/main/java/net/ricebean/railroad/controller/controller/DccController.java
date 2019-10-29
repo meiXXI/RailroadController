@@ -1,6 +1,7 @@
 package net.ricebean.railroad.controller.controller;
 
 import net.ricebean.railroad.controller.model.DccCommand;
+import net.ricebean.railroad.controller.model.DccLogItem;
 import net.ricebean.railroad.controller.model.DccStatus;
 import net.ricebean.railroad.controller.service.DccService;
 import org.slf4j.Logger;
@@ -9,7 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
+import java.util.List;
+
 
 /**
  * REST endpoints for DCC commands.
@@ -34,17 +36,14 @@ public class DccController {
         return dccService.executeCommand(dccCommand);
     }
 
-    @PostMapping(value = "/on")
-    public String switchOn() throws Exception {
-        DccCommand dccCommand = new DccCommand();
-        dccCommand.setCommand("<1>");
-        return dccService.executeCommand(dccCommand);
+    @GetMapping(value = "/logs/{timestamp}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<DccLogItem> getLogs(@PathVariable long timestamp) {
+        return dccService.getLogItems(timestamp);
     }
 
-    @PostMapping(value = "/off")
-    public String switchOff() throws Exception {
-        DccCommand dccCommand = new DccCommand();
-        dccCommand.setCommand("<0>");
-        return dccService.executeCommand(dccCommand);
+    @GetMapping(value = "/logs", produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<DccLogItem> getLogs() {
+        return dccService.getLogItems();
     }
+
 }
