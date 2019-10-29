@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { DccCommand } from './dcc-command'
+import { DccStatus } from './dcc-status';
 
 @Component({
     selector: 'app-dcc',
@@ -11,6 +12,8 @@ export class DccComponent implements OnInit {
 
     dccCommand: DccCommand;
 
+    dccStatus: DccStatus;
+
     /**
      * Custom constructor.
      */
@@ -18,6 +21,7 @@ export class DccComponent implements OnInit {
         private http: HttpClient
     ) {
         this.dccCommand = new DccCommand()
+        this.statusUpdate();
     }
 
     ngOnInit() {
@@ -52,5 +56,18 @@ export class DccComponent implements OnInit {
                 data => console.log("Success: " + data),
                 error => console.log("Error: " + error)
             )
+    }
+
+    statusUpdate() {
+        setTimeout(() => {
+            // update status
+            this.http.get<DccStatus>('/dcc/status')
+                .subscribe(
+                    data => this.dccStatus = data,
+                    error => console.log("Error: " + error)
+                )
+
+            this.statusUpdate();
+        }, 2500);
     }
 }
