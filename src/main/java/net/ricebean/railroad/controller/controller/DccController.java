@@ -25,22 +25,39 @@ public class DccController {
     @Autowired
     private DccService dccService;
 
+    /**
+     * Returns the current status of the DCC Controller.
+     * @return
+     */
     @GetMapping(value="/status", produces = MediaType.APPLICATION_JSON_VALUE)
     public DccStatus getStatus() {
         return dccService.getStatus();
     }
 
+    /**
+     * Execute a DCC Command on the DCC Controller.
+     * @param dccCommand The DCC Command to be executed.
+     */
     @PostMapping
-    public String executeCommand(@RequestBody DccCommand dccCommand) throws Exception {
+    public void executeCommand(@RequestBody DccCommand dccCommand) throws Exception {
         log.info("New DCC Command has received: '" + dccCommand.getCommand() + "'");
-        return dccService.executeCommand(dccCommand);
+        dccService.executeCommand(dccCommand);
     }
 
+    /**
+     * Returns new dcc logs emerged since the last timestamp.
+     * @param timestamp The timestamp.
+     * @return List of newly emerged log items.
+     */
     @GetMapping(value = "/logs/{timestamp}", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<DccLogItem> getLogs(@PathVariable long timestamp) {
         return dccService.getLogItems(timestamp);
     }
 
+    /**
+     * Return all log items in the cache.
+     * @return List of all log items in cache.
+     */
     @GetMapping(value = "/logs", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<DccLogItem> getLogs() {
         return dccService.getLogItems();

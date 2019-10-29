@@ -13,29 +13,28 @@ import java.util.List;
 public interface DccService {
 
     /**
-     * Return a list of log items newer than the timestamp..
+     * Returns a list of log items newer than the timestamp..
      * @param timestamp The timestamp.
      * @return List of log items.
      */
     List<DccLogItem> getLogItems(long timestamp);
 
     /**
-     * Returns all log times in cache.
+     * Returns all log items in cache.
      * @return List of all log items in cache.
      */
     default List<DccLogItem> getLogItems() { return getLogItems(0); }
 
     /**
-     * Execute a given DCC Command.
+     * Execute a given DCC Command on the DCC Controller.
      * @param dccCommand The DCC Command.
-     * @return String value
      */
-    String executeCommand(DccCommand dccCommand) throws IOException;
+    void executeCommand(DccCommand dccCommand) throws IOException;
 
 
     /**
-     * Returns status details of the DCC Interface.
-     * @return Status of the DCC interface.
+     * Returns status details of the DCC Controller.
+     * @return Status of the DCC Controller.
      */
     DccStatus getStatus();
 }
