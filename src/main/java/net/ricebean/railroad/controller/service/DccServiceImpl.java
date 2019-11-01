@@ -1,109 +1,140 @@
 package net.ricebean.railroad.controller.service;
 
+import com.fazecast.jSerialComm.SerialPort;
+import com.fazecast.jSerialComm.SerialPortDataListener;
+import com.fazecast.jSerialComm.SerialPortEvent;
 import net.ricebean.railroad.controller.model.DccCommand;
-import net.ricebean.railroad.controller.model.DccLogItem;
 import net.ricebean.railroad.controller.model.DccStatus;
-import net.ricebean.railroad.controller.model.types.Status;
+import net.ricebean.railroad.controller.service.listener.DccMessageListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.PathVariable;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import javax.annotation.PostConstruct;
+import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+/**
+ * Service for handling all the DCC communication.
+ */
 @Component
-public class DccServiceImpl implements DccService {
+public class DccServiceImpl implements DccService, SerialPortDataListener {
 
     private static final Logger log = LoggerFactory.getLogger(DccServiceImpl.class);
 
-    private static int LOG_CAPACTIY_MAX = 1000;
-    private static int LOG_CAPACTIY = 750;
+    @Autowired
+    private ApplicationContext applicationContext;
 
-    private final static List<DccLogItem> LOG_ITEMS = Collections.synchronizedList(new ArrayList<>(LOG_CAPACTIY_MAX + 100));
+    private SerialPort serialPort;
+    private final StringWriter serialInputCache = new StringWriter();
+    private Pattern commandFilterPattern = Pattern.compile("(<[^>]+>)");
+
+    /**
+     * Default constructor.
+     */
+    public DccServiceImpl() {
+    }
+
+    @PostConstruct
+    public void init() {
+        this.serialPort = initSerialPort();
+    }
 
     @Override
-    public String executeCommand(DccCommand dccCommand) throws IOException {
-        log.info("Process Command: " + dccCommand.getCommand());
+    public void executeCommand(DccCommand dccCommand) {
 
-        Path path = Paths.get("/dev/ttyACM0");
-        // Files.write(path, dccCommand.getCommand().getBytes());
-        append(dccCommand);
+        // extract command
+        byte[] cmd = dccCommand.getCommand().getBytes();
 
-        return null;
+        // notify listeners
+        Collection<DccMessageListener> dccMessageListeners = applicationContext.getBeansOfType(DccMessageListener.class).values();
+
+        for(DccMessageListener dccMessageListener: dccMessageListeners) {
+            dccMessageListener.notifyOutboundDccMessage(new String(cmd));
+        }
+
+        // send
+        this.serialPort.writeBytes(cmd, cmd.length);
     }
 
     @Override
     public DccStatus getStatus() {
-        DccStatus dccStatus;
+        return null;
+    }
 
-        Path path = Paths.get("/dev/ttyACM0");
+    private SerialPort initSerialPort() {
+        SerialPort serialPort;
 
-        if(Files.exists(path)) {
-            dccStatus = new DccStatus(Status.Online);
+        SerialPort[] serialPorts = SerialPort.getCommPorts();
+
+        if(serialPorts.length == 1) {
+            serialPort = serialPorts[0];
+            serialPort.setComPortParameters(115200, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
+            serialPort.addDataListener(this);
+            serialPort.openPort();
         } else {
-            dccStatus = new DccStatus(Status.Offline);
+            serialPort = null;
         }
-        return dccStatus;
+
+        return serialPort;
     }
 
     /**
-     * Returns list logs since timestamp.
-     * @return List of LogItems.
+     * Method of SerialPortDataListener interface.
      */
     @Override
-    public List<DccLogItem> getLogItems(long timestamp) {
-        return getLogs(timestamp);
+    public int getListeningEvents() {
+        return SerialPort.LISTENING_EVENT_DATA_AVAILABLE;
     }
 
     /**
-     * Cache log event in the static list.
-     * @param dccCommand The command to be cached.
+     * Method of SerialPortDataListener interface. Method will be called if a new message part is available.
      */
-    private void append(DccCommand dccCommand) {
+    @Override
+    public void serialEvent(SerialPortEvent event) {
+        if (event.getEventType() == SerialPort.LISTENING_EVENT_DATA_AVAILABLE) {
+            SerialPort serialPort = event.getSerialPort();
 
-        // create log item object
-        DccLogItem logItem = new DccLogItem(dccCommand);
+            byte[] data = new byte[serialPort.bytesAvailable()];
+            event.getSerialPort().readBytes(data, data.length);
 
-        // cache
-        synchronized (LOG_ITEMS) {
-            LOG_ITEMS.add(logItem);
-        }
-
-        // if list is too long, remove the first items
-        synchronized (LOG_ITEMS) {
-            if (LOG_ITEMS.size() > LOG_CAPACTIY_MAX) {
-                for (int i = 0; i < LOG_CAPACTIY_MAX - LOG_CAPACTIY; i++) {
-                    LOG_ITEMS.remove(0);
-                }
-            }
+            processIncomingMessagePart(new String(data));
         }
     }
 
     /**
-     * Returns logs since the defined
-     * @param timestamp The time in nano since when items are requested.
+     * Process an incoming message part.
+     * @param messagePart The incoming message part.
      */
-    private List<DccLogItem> getLogs(long timestamp) {
-        List<DccLogItem> result;
+    private synchronized void processIncomingMessagePart(String messagePart) {
 
-        // create and filter result
-        synchronized (LOG_ITEMS) {
-            result = new ArrayList<>(LOG_ITEMS.size());
+        // append message part
+        serialInputCache.append(messagePart);
 
-            for (int i = LOG_ITEMS.size() - 1; i > -1; i--) {
-                if (LOG_ITEMS.get(i).getTimestamp() > timestamp) {
-                    result.add(LOG_ITEMS.get(i));
-                }
-            }
+        // analyze input
+        List<String> commands = new ArrayList<>(10);
+        Matcher matcher = commandFilterPattern.matcher(serialInputCache.toString());
+
+        while (matcher.find()) {
+            commands.add(matcher.group());
         }
 
-        // return result
-        return result;
+        // notify listeners and cleanup
+        Collection<DccMessageListener> listeners = applicationContext.getBeansOfType(DccMessageListener.class).values();
+
+        for(String command: commands) {
+            serialInputCache.getBuffer().delete(0, command.length());
+
+            for(DccMessageListener listener: listeners) {
+                listener.notifyInboundDccMessage(command);
+            }
+        }
     }
+
 }

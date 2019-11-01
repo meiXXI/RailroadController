@@ -12,6 +12,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.io.ClassPathResource;
 
+import javax.annotation.PostConstruct;
+
 @SpringBootApplication
 public class Application {
 

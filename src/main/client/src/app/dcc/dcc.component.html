@@ -18,8 +18,8 @@ Status: <span *ngIf="dccStatus">{{ dccStatus.status }}</span><span *ngIf="!dccSt
 <div class="log-box">
     <table class="table table-sm table-borderless">
         <tr *ngFor="let logItem of logItems" class="d-flex">
-            <td class="col-3">{{ logItem.timestamp | date : 'yyyy-MM-dd HH:mm:ss.SSS' }} - </td>
-            <td class="col-9">{{ logItem.message }}</td>
+            <td class="col-4">{{ logItem.timestamp | date : 'HH:mm:ss.SSS' }} ({{ logItem.direction }}) </td>
+            <td class="col-8">{{ logItem.message }}</td>
         </tr>
     </table>
 </div>

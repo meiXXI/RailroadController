@@ -1,27 +1,40 @@
 package net.ricebean.railroad.controller.model;
 
 /**
- * Dcc Log model object.
+ * Dcc Log Item model object.
  */
 public class DccLogItem {
 
-    private final String message;
-    private final long timestamp;
+    public enum Direction {
+        Inbound,
+        Outbound
+    }
 
-    /**
-     * Custom constructor.
-     * @param dccCommand The command.
-     */
-    public DccLogItem(DccCommand dccCommand) {
+    private final long timestamp;
+    private final String message;
+    private final Direction direction;
+
+
+    public DccLogItem(String message, Direction direction) {
         this.timestamp = System.currentTimeMillis();
-        this.message = dccCommand.getCommand();
+        this.message = message;
+        this.direction = direction;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
     }
 
     public String getMessage() {
         return message;
     }
 
-    public long getTimestamp() {
-        return timestamp;
+    public Direction getDirection() {
+        return direction;
+    }
+
+    @Override
+    public String toString() {
+        return "Message: (" + direction + ") " + message;
     }
 }

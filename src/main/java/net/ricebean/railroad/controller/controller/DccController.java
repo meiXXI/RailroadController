@@ -3,6 +3,7 @@ package net.ricebean.railroad.controller.controller;
 import net.ricebean.railroad.controller.model.DccCommand;
 import net.ricebean.railroad.controller.model.DccLogItem;
 import net.ricebean.railroad.controller.model.DccStatus;
+import net.ricebean.railroad.controller.service.DccLogService;
 import net.ricebean.railroad.controller.service.DccService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,8 +23,12 @@ public class DccController {
 
     private static final Logger log = LoggerFactory.getLogger(DccController.class);
 
+
     @Autowired
     private DccService dccService;
+
+    @Autowired
+    private DccLogService dccLogService;
 
     /**
      * Returns the current status of the DCC Controller.
@@ -40,7 +45,6 @@ public class DccController {
      */
     @PostMapping
     public void executeCommand(@RequestBody DccCommand dccCommand) throws Exception {
-        log.info("New DCC Command has received: '" + dccCommand.getCommand() + "'");
         dccService.executeCommand(dccCommand);
     }
 
@@ -51,7 +55,7 @@ public class DccController {
      */
     @GetMapping(value = "/logs/{timestamp}", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<DccLogItem> getLogs(@PathVariable long timestamp) {
-        return dccService.getLogItems(timestamp);
+        return dccLogService.getLogItems(timestamp);
     }
 
     /**
@@ -60,7 +64,7 @@ public class DccController {
      */
     @GetMapping(value = "/logs", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<DccLogItem> getLogs() {
-        return dccService.getLogItems();
+        return dccLogService.getLogItems();
     }
 
 }

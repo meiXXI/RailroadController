@@ -34,10 +34,10 @@ export class DccComponent implements OnInit {
     ngOnInit() {
 
         // reload logs
-        this.reloadLogs();
+        this.autoReloadLogs();
 
         // reload status
-        this.reloadStatus();
+        // this.reloadStatus();
     }
 
     sendCommand() {
@@ -52,7 +52,7 @@ export class DccComponent implements OnInit {
         // post
         this.http.post('/dcc', dccCommand)
             .subscribe(
-                data => console.log("Success: " + data),
+                data => this.reloadLogs(),
                 error => console.log("Error: " + error)
             )
     }
@@ -78,36 +78,43 @@ export class DccComponent implements OnInit {
     }
 
     /**
-     * Automated logs update.
+     * Auto updater for logs.
+     */
+    autoReloadLogs() {
+        this.reloadLogs();
+        
+        setTimeout(() => {
+            this.autoReloadLogs();
+        }, 2500);
+    }
+
+    /**
+     * Update logs.
      */
     reloadLogs() {
-        setTimeout(() => {
-            this.http.get<DccLogItem[]>('/dcc/logs/' + this.logTimestamp)
-                .subscribe(
-                    data => {
+        this.http.get<DccLogItem[]>('/dcc/logs/' + this.logTimestamp)
+            .subscribe(
+                data => {
 
-                        // save logs
-                        if (this.logItems == null) {
-                            this.logItems = data;
-                        } else {
-                            this.logItems = data.concat(this.logItems);
-                        }
+                    // save logs
+                    if (this.logItems == null) {
+                        this.logItems = data;
+                    } else {
+                        this.logItems = data.concat(this.logItems);
+                    }
 
-                        // keep latest timestamp
-                        if (data.length > 0) {
-                            this.logTimestamp = data[0].timestamp;
-                        }
+                    // keep latest timestamp
+                    if (data.length > 0) {
+                        this.logTimestamp = data[0].timestamp;
+                    }
 
-                        // shorten messages list
-                        if (this.logItems.length > 6000) {
-                            this.logItems = this.logItems.slice(0, 6000);
-                        }
-                    },
-                    error => console.log("Error: " + error)
-                )
-
-            this.reloadLogs();
-        }, 2500);
+                    // shorten messages list
+                    if (this.logItems.length > 6000) {
+                        this.logItems = this.logItems.slice(0, 6000);
+                    }
+                },
+                error => console.log("Error: " + error)
+            )
     }
 
     /**
