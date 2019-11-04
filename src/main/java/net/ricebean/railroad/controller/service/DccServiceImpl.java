@@ -75,11 +75,14 @@ public class DccServiceImpl implements DccService, SerialPortDataListener {
 
         if(serialPorts.length == 1) {
             serialPort = serialPorts[0];
+            log.info("Init Serial Port '" + serialPort.getDescriptivePortName() + "'");
+
             serialPort.setComPortParameters(115200, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
             serialPort.addDataListener(this);
             serialPort.openPort();
         } else {
             serialPort = null;
+            log.warn("Error initializing Serial Port. Number of ports found: " + serialPorts.length);
         }
 
         return serialPort;
