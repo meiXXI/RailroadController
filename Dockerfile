@@ -43,11 +43,9 @@ RUN apt-get update && apt-get install -y socat \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=java-builder ["/work/build/libs/*.jar", "/opt/RailwayController.jar"]
-COPY ["src/main/docker/start.sh", "/opt/"]
 
 EXPOSE 8080
 
 WORKDIR /opt
-
-#ENTRYPOINT ["./start.sh"]   
+ 
 ENTRYPOINT socat pty,link=$TTY,nonblock,raw,echo=0,ignoreof,waitslave tcp:$IP_BASE_STATION & exec java -Xmx4g -jar /opt/RailwayController.jar
