@@ -1,8 +1,6 @@
 
 # build client
-# FROM node:current-alpine as client-builder
 FROM trion/ng-cli as client-builder
-
 
 COPY ["src/main/client", "/app"]
 RUN ls -l
@@ -38,8 +36,18 @@ RUN ./gradlew build --no-daemon
 # build final image
 FROM openjdk:11-jre-slim
 
-COPY --from=java-builder /work/build/libs/*.jar /opt/RailwayController.jar
+ENV TTY="/opt/ttyV0"
+ENV IP_BASE_STATION="192.168.42.240:2001"
+
+RUN apt-get update && apt-get install -y socat \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=java-builder ["/work/build/libs/*.jar", "/opt/RailwayController.jar"]
+COPY ["src/main/docker/start.sh", "/opt/"]
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-Xmx4g", "-jar","/opt/RailwayController.jar"]
+WORKDIR /opt
+
+#ENTRYPOINT ["./start.sh"]   
+ENTRYPOINT socat pty,link=$TTY,nonblock,raw,echo=0,ignoreof,waitslave tcp:$IP_BASE_STATION & exec java -Xmx4g -jar /opt/RailwayController.jar

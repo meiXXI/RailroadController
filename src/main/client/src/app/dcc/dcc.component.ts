@@ -40,8 +40,33 @@ export class DccComponent implements OnInit {
         // this.reloadStatus();
     }
 
-    sendCommand() {
-        this.executeCommand(this.dccCommand);
+    sendCommand(strCommand) {
+        let dccCommand: DccCommand = null;
+
+        // get command
+        if (strCommand) {
+            dccCommand = new DccCommand();
+            dccCommand.command = strCommand;
+            this.dccCommand = dccCommand;
+        } else {
+            dccCommand = this.dccCommand;
+        }
+            
+        // normalize command
+        let cmd = dccCommand.command.trim();
+
+        if (cmd.charAt(0) != "<") {
+            cmd = "<" + cmd;
+        }
+
+        if (cmd.charAt(cmd.length - 1) != ">") {
+            cmd = cmd + ">";
+        }
+
+        dccCommand.command = cmd;
+
+        // execute
+        this.executeCommand(dccCommand);
     }
 
     /**
@@ -58,31 +83,11 @@ export class DccComponent implements OnInit {
     }
 
     /**
-     * Switch on DCC Controller.
-     */
-    switchOn() {
-        let cmd: DccCommand = new DccCommand();
-        cmd.command = "<1>";
-
-        this.executeCommand(cmd);
-    }
-
-    /**
-     * Switch off DCC Controller.
-     */
-    switchOff() {
-        let cmd: DccCommand = new DccCommand();
-        cmd.command = "<0>";
-
-        this.executeCommand(cmd);
-    }
-
-    /**
      * Auto updater for logs.
      */
     autoReloadLogs() {
         this.reloadLogs();
-        
+
         setTimeout(() => {
             this.autoReloadLogs();
         }, 2500);

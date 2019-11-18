@@ -9,8 +9,10 @@ import net.ricebean.railroad.controller.service.listener.DccMessageListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.StringWriter;
@@ -30,6 +32,9 @@ public class DccServiceImpl implements DccService, SerialPortDataListener {
 
     @Autowired
     private ApplicationContext applicationContext;
+
+    @Value("${TTY}")
+    private String ttyPath;
 
     private SerialPort serialPort;
     private final StringWriter serialInputCache = new StringWriter();
@@ -55,7 +60,7 @@ public class DccServiceImpl implements DccService, SerialPortDataListener {
         // notify listeners
         Collection<DccMessageListener> dccMessageListeners = applicationContext.getBeansOfType(DccMessageListener.class).values();
 
-        for(DccMessageListener dccMessageListener: dccMessageListeners) {
+        for (DccMessageListener dccMessageListener : dccMessageListeners) {
             dccMessageListener.notifyOutboundDccMessage(new String(cmd));
         }
 
@@ -69,20 +74,28 @@ public class DccServiceImpl implements DccService, SerialPortDataListener {
     }
 
     private SerialPort initSerialPort() {
-        SerialPort serialPort;
+        SerialPort serialPort = null;
 
-        SerialPort[] serialPorts = SerialPort.getCommPorts();
+        if (!StringUtils.isEmpty(ttyPath)) {
+            serialPort = SerialPort.getCommPort(ttyPath);
+            log.info("Init (defined) Serial Port '" + serialPort.getDescriptivePortName() + "' (" + serialPort.getSystemPortName() + ") + Path: " + ttyPath);
+        } else {
+            SerialPort[] serialPorts = SerialPort.getCommPorts();
 
-        if(serialPorts.length == 1) {
-            serialPort = serialPorts[0];
-            log.info("Init Serial Port '" + serialPort.getDescriptivePortName() + "'");
+            if (serialPorts.length == 1) {
+                serialPort = serialPorts[0];
+                log.info("Init Serial Port '" + serialPort.getDescriptivePortName() + "' (" + serialPort.getSystemPortName() + ")");
+            }
+        }
 
+        // open port
+        if (serialPort != null) {
             serialPort.setComPortParameters(115200, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
             serialPort.addDataListener(this);
             serialPort.openPort();
         } else {
-            serialPort = null;
-            log.warn("Error initializing Serial Port. Number of ports found: " + serialPorts.length);
+            log.warn("Error initializing Serial Port.");
+
         }
 
         return serialPort;
@@ -113,6 +126,7 @@ public class DccServiceImpl implements DccService, SerialPortDataListener {
 
     /**
      * Process an incoming message part.
+     *
      * @param messagePart The incoming message part.
      */
     private synchronized void processIncomingMessagePart(String messagePart) {
@@ -131,10 +145,10 @@ public class DccServiceImpl implements DccService, SerialPortDataListener {
         // notify listeners and cleanup
         Collection<DccMessageListener> listeners = applicationContext.getBeansOfType(DccMessageListener.class).values();
 
-        for(String command: commands) {
+        for (String command : commands) {
             serialInputCache.getBuffer().delete(0, command.length());
 
-            for(DccMessageListener listener: listeners) {
+            for (DccMessageListener listener : listeners) {
                 listener.notifyInboundDccMessage(command);
             }
         }
