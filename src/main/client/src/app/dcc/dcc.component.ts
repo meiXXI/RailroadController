@@ -40,7 +40,10 @@ export class DccComponent implements OnInit {
         // this.reloadStatus();
     }
 
-    sendCommand(strCommand) {
+    /**
+     * Execute a DCC Command
+     */
+    executeCommand(strCommand) {
         let dccCommand: DccCommand = null;
 
         // get command
@@ -65,19 +68,16 @@ export class DccComponent implements OnInit {
 
         dccCommand.command = cmd;
 
-        // execute
-        this.executeCommand(dccCommand);
-    }
-
-    /**
-     * Execute a DCC Command
-     */
-    executeCommand(dccCommand: DccCommand) {
-
         // post
         this.http.post('/dcc', dccCommand)
             .subscribe(
-                data => this.reloadLogs(),
+                data => {
+                    this.reloadLogs();
+                
+                    setTimeout(() => {
+                        this.reloadLogs();
+                    }, 100);
+                },
                 error => console.log("Error: " + error)
             )
     }
